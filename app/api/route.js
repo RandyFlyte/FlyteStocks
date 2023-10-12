@@ -12,8 +12,8 @@ export async function GET(request) {
 export async function POST(request) {
   // Set requestData to a static value for testing
   const requestData = {
-    symbol: 'AAPL',
-    price: 145,
+    symbol: 'AMC',
+    price: 8,
     quantity: 10,
   };
 
