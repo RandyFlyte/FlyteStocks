@@ -27,8 +27,9 @@ export default function Home() {
         throw new Error('Network response was not ok ' + response.statusText);
       // Assign data to API response ex: [ "2023-11-10", "2023-11-17", ...]
       const data = await response.json();
-      // Populate dates array state with response data
+      // Populate dates array state with response data.
       setDates(data);
+      // Store ticker in ticker state.
       setTicker(ticker);
     } catch (error) {
       console.error(
@@ -40,6 +41,7 @@ export default function Home() {
 
   // When user clicks on an expiration date
   const handleDateClick = async (ticker, date) => {
+    // Store date in date state.
     setDate(date);
     const data = await FetchOptionsAtExpDate(ticker, date);
     setOptionData(data);
@@ -92,12 +94,46 @@ export default function Home() {
     }
   };
 
+  const fetchMark = async (symbol) => {
+    try {
+      const response = await fetch(`http://127.0.0.1:5000/info/${symbol}`);
+      if (!response.ok) {
+        throw new Error('Network response was not ok ' + response.statusText);
+      }
+      const data = await response.json();
+      const mark = (data.bid + data.ask) / 2;
+      return mark;
+    } catch (error) {
+      console.error(
+        'There has been a problem with your fetch operation:',
+        error
+      );
+    }
+  };
+
+  const updatePositionsWithMark = async () => {
+    const updatedPositions = await Promise.all(
+      positions.map(async (position) => {
+        const mark = await fetchMark(position.symbol);
+        return { ...position, mark }; // Add the mark to the position object
+      })
+    );
+
+    setPositions(updatedPositions);
+  };
+
   useEffect(() => {
     if (positions.length > 0) {
       const symbol = positions[1].symbol; // Assumes positions are stored with a 'symbol' property
       fetchBidAndAsk(symbol);
     }
   }, [positions]);
+
+  useEffect(() => {
+    if (positions.length > 0) {
+      updatePositionsWithMark();
+    }
+  }, []); // Dependency array contains positions, this effect will run when positions change
 
   return (
     <main className='flex min-h-screen flex-col items-center justify-between p-24'>
@@ -119,6 +155,7 @@ export default function Home() {
             date={date}
           />
         </div>
+
         <div className='flex-1'>
           {/* Display PutOptionsList */}
           <PutOptionsList
@@ -134,23 +171,22 @@ export default function Home() {
           onClose={handleCloseModal}
           key={bidAndAsk.ask}
           symbol={selectedSymbol}
+          ticker={ticker}
+          date={date}
         />
       )}
 
-      {/* <div className='mt-4'>
-        {dates.map((date, index) => (
-          <div key={index} className='mb-2'>
-            {date}
-          </div>
-        ))}
-      </div> */}
       <div className='mt-4'>
+        <span>Portfolio</span>
         {positions.map((position, index) => (
           <div key={index} className='mb-2'>
-            {position.symbol}: {position.price} x {position.quantity}
+            {position.symbol}: {parseFloat(position.price).toFixed(2)} x{' '}
+            {position.quantity}
+            {/* Use position.symbol to get current price */}
           </div>
         ))}
       </div>
+
       {Object.keys(bidAndAsk).length > 0 && (
         <div className='mt-4'>
           Bid: {bidAndAsk.bid}, Ask: {bidAndAsk.ask}

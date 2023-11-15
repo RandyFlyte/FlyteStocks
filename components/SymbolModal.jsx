@@ -1,12 +1,34 @@
 // This will be the pop-up modal component
-const SymbolModal = ({ data, onClose, symbol }) => {
+const SymbolModal = ({ data, onClose, symbol, ticker, date }) => {
   if (!data) return null;
-  //const symbol = data.underlyingSymbol || data.symbol;
 
+  let optionType = '';
+  if (symbol.length > 4) {
+    const typeIndex = symbol.length - 9; // 'C' or 'P' is 9 places from the right, strike price starts right after
+    optionType = symbol[typeIndex];
+    console.log(optionType);
+    if (symbol[typeIndex] == 'C') {
+      optionType = 'Call';
+    } else if (symbol[typeIndex] == 'P') {
+      optionType = 'Put';
+    } else {
+      optionType = 'Stock';
+    }
+  }
+  // Extract the strike price
+  const strikePriceStr = symbol.substring(symbol.length - 8);
+  const strikePrice = parseInt(strikePriceStr, 10) / 1000;
+  console.log(strikePrice);
+
+  const underlyingSymbol = ticker.toUpperCase();
+  console.log(underlyingSymbol);
   const handleBuy = async (event) => {
     event.preventDefault();
     const formData = new FormData(event.target);
     const requestData = {
+      optionType: optionType,
+      underlyingSymbol: underlyingSymbol,
+      date: date,
       symbol: symbol,
       price: formData.get('price'),
       quantity: formData.get('quantity'),
