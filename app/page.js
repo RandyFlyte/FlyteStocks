@@ -1,55 +1,36 @@
 'use client';
+
+import { useState, useEffect } from 'react';
 import { TickerInput } from '@/components/TickerInput';
 import ExpirationDatesList from '@/components/ExpirationDatesList';
 import FetchOptionsAtExpDate from '@/util/FetchOptionsAtExpDate';
 import { CallOptionsList } from '@/components/CallOptionsList';
 import { PutOptionsList } from '@/components/PutOptionsList';
 import SymbolModal from '@/components/SymbolModal';
-import { useState, useEffect } from 'react';
+import handleTickerSubmit from '@/util/tickerService';
+
+import { useStore } from 'zustand';
 
 export default function Home() {
   const [dates, setDates] = useState([]);
   const [date, setDate] = useState('');
   const [ticker, setTicker] = useState('');
-  const [selectedSymbol, setSelectedSymbol] = useState(null); // Add a new state variable for the selected symbol
+  const [selectedSymbol, setSelectedSymbol] = useState(null);
   const [positions, setPositions] = useState([]);
   const [optionData, setOptionData] = useState({ calls: [], puts: [] });
   const [bidAndAsk, setBidAndAsk] = useState({});
-  //const [bidAndAsk, setBidAndAsk] = useState(null);
   const [showModal, setShowModal] = useState(false);
-
-  // When enter Ticker and hit Submit
-  const handleTickerSubmit = async (ticker) => {
-    try {
-      // Call Flask api endpoint (returns expiration dates for inputted ticker)
-      const response = await fetch(`http://127.0.0.1:5000/options/${ticker}`);
-      if (!response.ok)
-        throw new Error('Network response was not ok ' + response.statusText);
-      // Assign data to API response ex: [ "2023-11-10", "2023-11-17", ...]
-      const data = await response.json();
-      // Populate dates array state with response data.
-      setDates(data);
-      // Store ticker in ticker state.
-      setTicker(ticker);
-    } catch (error) {
-      console.error(
-        'There has been a problem with your fetch operation:',
-        error
-      );
-    }
-  };
 
   // When user clicks on an expiration date
   const handleDateClick = async (ticker, date) => {
-    // Store date in date state.
-    setDate(date);
+    setDate(date); // Store date in date state.
     const data = await FetchOptionsAtExpDate(ticker, date);
     setOptionData(data);
   };
 
   // When user click on an indivdual options symbol
   const handleOptionClick = (symbol) => {
-    fetchBidAndAsk(symbol);
+    fetchBidAndAsk(symbol); // Set states bid and ask for symbol
     setSelectedSymbol(symbol); // Store the selected symbol in the state
     setShowModal(true); // Add this line to show the modal
   };
@@ -65,7 +46,7 @@ export default function Home() {
         throw new Error('Network response was not ok ' + response.statusText);
       }
       const data = await response.json();
-      setPositions(data.data); // Assumes your data is nested under a "data" property
+      setPositions(data.data); // Set current positions state
     } catch (error) {
       console.error(
         'There has been a problem with your fetch operation:',
@@ -76,7 +57,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchPositions();
-  }, []); // Empty array means this useEffect runs once, similar to componentDidMount
+  }, []);
 
   const fetchBidAndAsk = async (symbol) => {
     try {
@@ -118,7 +99,6 @@ export default function Home() {
         return { ...position, mark }; // Add the mark to the position object
       })
     );
-
     setPositions(updatedPositions);
   };
 
@@ -137,7 +117,7 @@ export default function Home() {
 
   return (
     <main className='flex min-h-screen flex-col items-center justify-between p-24'>
-      <TickerInput onTickerSubmit={handleTickerSubmit} />
+      <TickerInput setDates={setDates} setTicker={setTicker} />
 
       <ExpirationDatesList
         dates={dates}
